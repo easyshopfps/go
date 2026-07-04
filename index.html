@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="lo">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ระบบสุริยะ - ควบคุมด้วยมือ</title>
+<title>ລະບົບສຸລິຍະ - ຄວບຄຸມດ້ວຍມື</title>
 <style>
   html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Segoe UI',Tahoma,sans-serif;color:#fff;}
   #canvas3d{position:fixed;top:0;left:0;width:100%;height:100%;display:block;}
@@ -11,23 +11,15 @@
     border:2px solid rgba(120,180,255,.5);opacity:.85;transform:scaleX(-1);z-index:5;
     box-shadow:0 0 20px rgba(80,140,255,.4);}
   #overlay{position:fixed;bottom:16px;right:16px;width:180px;height:135px;transform:scaleX(-1);z-index:6;pointer-events:none;}
-  #hud{position:fixed;top:16px;left:16px;z-index:6;background:rgba(10,15,30,.55);
-    padding:14px 18px;border-radius:14px;border:1px solid rgba(120,170,255,.3);
-    backdrop-filter:blur(6px);max-width:310px;font-size:13px;line-height:1.6;}
-  #hud h1{font-size:16px;margin:0 0 8px;background:linear-gradient(90deg,#8ecfff,#ffd27a);
-    -webkit-background-clip:text;background-clip:text;color:transparent;}
-  #hud .row{opacity:.85}
-  #gesture{position:fixed;top:16px;right:16px;z-index:6;background:rgba(10,15,30,.55);
-    padding:10px 18px;border-radius:14px;border:1px solid rgba(120,170,255,.3);
-    font-size:14px;backdrop-filter:blur(6px);}
+  #gesture{position:fixed;bottom:167px;right:16px;width:180px;z-index:6;background:rgba(10,15,30,.6);
+    padding:8px 10px;border-radius:12px;border:1px solid rgba(120,170,255,.35);
+    font-size:14px;text-align:center;backdrop-filter:blur(6px);}
   #status{color:#7ee787;font-weight:600;}
   #startBtn{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10;
     padding:16px 34px;font-size:16px;border-radius:40px;border:1px solid rgba(140,190,255,.5);
     background:linear-gradient(135deg,#1c2a4a,#0e1730);color:#dce8ff;cursor:pointer;
     box-shadow:0 0 30px rgba(80,140,255,.35);letter-spacing:.5px;}
   #startBtn:hover{background:linear-gradient(135deg,#26365e,#152040);}
-  #label{position:fixed;left:0;right:0;bottom:24px;text-align:center;z-index:6;
-    font-size:12px;color:#9fb4d8;opacity:.7;}
 </style>
 </head>
 <body>
@@ -35,20 +27,8 @@
 <canvas id="canvas3d"></canvas>
 <video id="video" autoplay playsinline muted></video>
 <canvas id="overlay"></canvas>
-
-<div id="hud">
-  <h1>☀️ ระบบสุริยะแบบโต้ตอบ</h1>
-  <div class="row">✊ กำมือ → ดวงอาทิตย์กลืนกินดาวเคราะห์</div>
-  <div class="row">✋ แบมือ → ดาวเคราะห์กลับสู่วงโคจร</div>
-  <div class="row">🤟 สัญลักษณ์ I Love You → ดาวรวมกันสะกดคำว่า I LOVE YOU</div>
-  <div class="row">✌️ ชู 2 นิ้ว → หลุมดำปรากฏและดูดดาวเคราะห์เข้าไป</div>
-  <div class="row">☝️ ชู 1 นิ้ว → หลุมดำเปิดและคายดาวเคราะห์ออกมา</div>
-  <div class="row">👋 ดันมือเข้าจอ → ซูมเข้า / ดึงมือกลับเร็ว ๆ → ซูมออกสะบัด</div>
-</div>
-
-<div id="gesture">มือ: <span id="status">ไม่พบมือ</span></div>
-<div id="label">เปิดกล้องแล้วยกมือให้เห็นในเฟรมกล้อง</div>
-<button id="startBtn">เปิดกล้อง &amp; เริ่มต้น</button>
+<div id="gesture">ມື: <span id="status">ບໍ່ພົບມື</span></div>
+<button id="startBtn">ເປີດກ້ອງ &amp; ເລີ່ມຕົ້ນ</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -67,7 +47,6 @@ let cameraDefaultDist = 220, cameraDist = 220;
 camera.position.set(0, 90, cameraDist);
 camera.lookAt(0,0,0);
 
-// Starfield
 function makeStars(count, spread, size){
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(count*3);
@@ -88,23 +67,16 @@ scene.add(stars);
 const starsClose = makeStars(1500, 900, 2.2);
 scene.add(starsClose);
 
-// Lighting
 scene.add(new THREE.AmbientLight(0x334466, 0.4));
 const sunLight = new THREE.PointLight(0xfff2cc, 3.2, 3000, 1.6);
 scene.add(sunLight);
 
-// Sun
 const sunBaseRadius = 14;
-const sunGeo = new THREE.SphereGeometry(sunBaseRadius, 48, 48);
-const sunMat = new THREE.MeshBasicMaterial({color:0xffcc55});
-const sun = new THREE.Mesh(sunGeo, sunMat);
+const sun = new THREE.Mesh(new THREE.SphereGeometry(sunBaseRadius, 48, 48), new THREE.MeshBasicMaterial({color:0xffcc55}));
 scene.add(sun);
-const sunGlowGeo = new THREE.SphereGeometry(sunBaseRadius*1.35, 48, 48);
-const sunGlowMat = new THREE.MeshBasicMaterial({color:0xffaa33, transparent:true, opacity:0.35});
-const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(sunBaseRadius*1.35, 48, 48), new THREE.MeshBasicMaterial({color:0xffaa33, transparent:true, opacity:0.35}));
 scene.add(sunGlow);
 
-// Orbit lines
 function makeOrbitLine(radius){
   const pts = [];
   for(let i=0;i<=128;i++){
@@ -116,7 +88,6 @@ function makeOrbitLine(radius){
   return new THREE.Line(geo, mat);
 }
 
-// Planet data
 const planetDefs = [
   {name:'Mercury', r:1.6, orbit:26,  speed:1.60, color:0xa79a8c},
   {name:'Venus',   r:2.8, orbit:37,  speed:1.18, color:0xe0b98d},
@@ -135,7 +106,7 @@ planetDefs.forEach((def, idx)=>{
   const mat = new THREE.MeshStandardMaterial({color:def.color, roughness:0.8, metalness:0.1});
   const mesh = new THREE.Mesh(geo, mat);
   const angle = Math.random()*Math.PI*2;
-  mesh.userData = {def, angle, heartIndex: idx};
+  mesh.userData = {def, angle, heartIndex: idx, burstMul: 1};
   scene.add(mesh);
   if(def.ring){
     const ringGeo = new THREE.RingGeometry(def.r*1.4, def.r*2.3, 64);
@@ -162,10 +133,7 @@ const blackHoleGroup = new THREE.Group();
 blackHoleGroup.position.copy(blackHolePos);
 scene.add(blackHoleGroup);
 
-const bhCore = new THREE.Mesh(
-  new THREE.SphereGeometry(6, 32, 32),
-  new THREE.MeshBasicMaterial({color:0x000000})
-);
+const bhCore = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 32), new THREE.MeshBasicMaterial({color:0x000000}));
 blackHoleGroup.add(bhCore);
 
 const bhRings = [];
@@ -185,23 +153,25 @@ blackHoleGroup.scale.setScalar(0.001);
 /* ============================= "I LOVE YOU" TEXT PARTICLES ============================= */
 function generateTextPoints(text){
   const cnv = document.createElement('canvas');
-  cnv.width = 640; cnv.height = 160;
+  cnv.width = 900; cnv.height = 220;
   const ctx = cnv.getContext('2d');
   ctx.fillStyle = '#000'; ctx.fillRect(0,0,cnv.width,cnv.height);
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 90px Arial, sans-serif';
+  ctx.font = '900 130px "Arial Black", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, cnv.width/2, cnv.height/2);
   const data = ctx.getImageData(0,0,cnv.width,cnv.height).data;
   const pts = [];
-  const step = 2;
+  const step = 1;
+  const worldWidth = 190; // world units the full canvas width maps to
+  const scale = worldWidth / cnv.width; // uniform scale keeps letters undistorted
   for(let y=0;y<cnv.height;y+=step){
     for(let x=0;x<cnv.width;x+=step){
       const idx = (y*cnv.width+x)*4;
       if(data[idx] > 128){
-        const nx = (x - cnv.width/2)/cnv.width*160;
-        const ny = -(y - cnv.height/2)/cnv.height*160*(cnv.height/cnv.width)*4;
+        const nx = (x - cnv.width/2) * scale;
+        const ny = -(y - cnv.height/2) * scale;
         pts.push(new THREE.Vector3(nx, ny, 0));
       }
     }
@@ -210,52 +180,43 @@ function generateTextPoints(text){
 }
 const textShapePoints = generateTextPoints('I LOVE YOU');
 
-const LOVE_COUNT = 1100;
+const LOVE_COUNT = Math.min(2200, Math.max(600, textShapePoints.length));
 const loveBase = new Float32Array(LOVE_COUNT*3);
 const loveTarget = new Float32Array(LOVE_COUNT*3);
-const loveColors = new Float32Array(LOVE_COUNT*3);
-const palette = [
-  [1.0,0.45,0.6],[0.6,0.5,1.0],[1.0,0.8,0.4],[0.5,0.85,1.0],[1.0,0.55,0.85]
-];
 for(let i=0;i<LOVE_COUNT;i++){
-  const r = 60+Math.random()*40;
+  // base: particles start scattered deep inside/behind the sun, invisible until summoned
+  const r = 6+Math.random()*8;
   const theta = Math.random()*Math.PI*2;
   const phi = Math.acos(2*Math.random()-1);
   loveBase[i*3] = r*Math.sin(phi)*Math.cos(theta);
-  loveBase[i*3+1] = 55 + r*Math.sin(phi)*Math.sin(theta)*0.5;
+  loveBase[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
   loveBase[i*3+2] = r*Math.cos(phi);
 
-  const tp = textShapePoints.length>0 ? textShapePoints[Math.floor(Math.random()*textShapePoints.length)] : new THREE.Vector3(0,0,0);
-  loveTarget[i*3] = tp.x + (Math.random()-0.5)*1.5;
-  loveTarget[i*3+1] = 55 + tp.y + (Math.random()-0.5)*1.5;
-  loveTarget[i*3+2] = tp.z + (Math.random()-0.5)*6;
-
-  const c = palette[Math.floor(Math.random()*palette.length)];
-  loveColors[i*3]=c[0]; loveColors[i*3+1]=c[1]; loveColors[i*3+2]=c[2];
+  const tp = textShapePoints.length>0 ? textShapePoints[i % textShapePoints.length] : new THREE.Vector3(0,0,0);
+  loveTarget[i*3] = tp.x + (Math.random()-0.5)*0.6;
+  loveTarget[i*3+1] = 60 + tp.y + (Math.random()-0.5)*0.6;
+  loveTarget[i*3+2] = tp.z + (Math.random()-0.5)*2.5;
 }
 const loveGeo = new THREE.BufferGeometry();
 const lovePosAttr = new THREE.BufferAttribute(new Float32Array(LOVE_COUNT*3), 3);
 loveGeo.setAttribute('position', lovePosAttr);
-loveGeo.setAttribute('color', new THREE.BufferAttribute(loveColors, 3));
-const loveMat = new THREE.PointsMaterial({
-  size:2.6, vertexColors:true, transparent:true, opacity:0.12,
-  blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true
-});
+const loveMat = new THREE.PointsMaterial({size:2.0, color:0xff4d88, transparent:true, opacity:0.0, blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true});
 const loveParticles = new THREE.Points(loveGeo, loveMat);
 scene.add(loveParticles);
 
 /* ============================= INTERACTION STATE ============================= */
-let suckT = 0;      // fist -> sun devours
-let loveT = 0;      // ily -> text forms
-let captureT = 0;   // black hole capture amount
-let flingAnim = 0;
-let flingActive = false;
-let swirlSpeed = 0;
+let suckT = 0, loveT = 0, captureT = 0;
+let flingAnim = 0, flingActive = false, swirlSpeed = 0;
 
-let handSizeSmoothed = null;
-let lastHandSize = null;
-let lastHandTime = performance.now();
+let handSizeSmoothed = null, lastHandSize = null, lastHandTime = performance.now();
 let zoomTargetDist = cameraDefaultDist;
+
+let sceneRotationOffset = 0;
+let lastFrameHandX = null;
+let handHistory = [];
+let prevGesture = 'none';
+let burstActive = false, burstStart = 0;
+const burstDir = new THREE.Vector3();
 
 const statusEl = document.getElementById('status');
 const clock = new THREE.Clock();
@@ -265,13 +226,11 @@ function animate(){
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  // sun
   const sunScale = 1 + suckT*2.6;
   sun.scale.setScalar(sunScale);
   sunGlow.scale.setScalar(sunScale*1.05 + Math.sin(t*3)*0.02);
   sunLight.intensity = 3.2 + suckT*4.5;
 
-  // black hole visuals
   const bhVisTarget = captureT > 0.02 ? 1 : 0;
   blackHoleGroup.userData.vis = blackHoleGroup.userData.vis || 0;
   blackHoleGroup.userData.vis += (bhVisTarget - blackHoleGroup.userData.vis) * Math.min(dt*3,1);
@@ -282,6 +241,12 @@ function animate(){
     ring.rotation.z += dt*(1.5+i*0.8)*(0.4+captureT*1.6);
   });
   blackHoleGroup.rotation.y += dt*0.3;
+
+  let burstFactor = 0;
+  if(burstActive){
+    const bt = (performance.now()-burstStart)/800;
+    if(bt>=1){ burstActive=false; } else { burstFactor = Math.pow(1-bt,2); }
+  }
 
   planets.forEach((mesh)=>{
     const def = mesh.userData.def;
@@ -296,6 +261,7 @@ function animate(){
     let pos = orbitPos.clone();
     if(suckT>0.001) pos.lerp(new THREE.Vector3(0,0,0), suckT);
     if(captureT>0.001) pos.lerp(blackHolePos, captureT);
+    if(burstFactor>0.001) pos.addScaledVector(burstDir, burstFactor*70*mesh.userData.burstMul);
     mesh.position.copy(pos);
 
     const scale = Math.max(1 - suckT*0.85 - captureT*0.9, 0.02);
@@ -309,22 +275,20 @@ function animate(){
     }
   });
 
-  // love text particles
   const posArr = lovePosAttr.array;
-  const wobble = Math.sin(t*1.3)*0.6;
+  const wobble = Math.sin(t*1.3)*0.4;
+  const loveEaseMove = loveT*loveT*(3-2*loveT);
   for(let i=0;i<LOVE_COUNT;i++){
     const bx=loveBase[i*3], by=loveBase[i*3+1], bz=loveBase[i*3+2];
     const tx=loveTarget[i*3], ty=loveTarget[i*3+1]+wobble, tz=loveTarget[i*3+2];
-    posArr[i*3]   = bx + (tx-bx)*loveT;
-    posArr[i*3+1] = by + (ty-by)*loveT;
-    posArr[i*3+2] = bz + (tz-bz)*loveT;
+    posArr[i*3]   = bx + (tx-bx)*loveEaseMove;
+    posArr[i*3+1] = by + (ty-by)*loveEaseMove;
+    posArr[i*3+2] = bz + (tz-bz)*loveEaseMove;
   }
   lovePosAttr.needsUpdate = true;
-  loveMat.opacity = 0.1 + loveT*0.9;
-  loveMat.size = 2.2 + loveT*1.0;
-  loveParticles.rotation.y += dt*0.02*(1-loveT);
+  loveMat.opacity = loveEaseMove*0.95;
+  loveMat.size = 1.6 + loveEaseMove*1.4;
 
-  // camera zoom + fling
   if(flingActive){
     flingAnim += dt*1.6;
     const burst = Math.sin(Math.min(flingAnim,1)*Math.PI);
@@ -339,8 +303,9 @@ function animate(){
     swirlSpeed += (0-swirlSpeed)*Math.min(dt*3,1);
   }
 
-  const camAngle = t*0.03;
-  camera.position.set(Math.sin(camAngle)*cameraDist*0.15, 90*(cameraDist/cameraDefaultDist), cameraDist);
+  const camAngle = t*0.02 + sceneRotationOffset;
+  const camY = 90*(cameraDist/cameraDefaultDist);
+  camera.position.set(Math.sin(camAngle)*cameraDist, camY, Math.cos(camAngle)*cameraDist);
   camera.lookAt(0,0,0);
 
   stars.rotation.y += dt*0.005;
@@ -393,6 +358,30 @@ function handBoundingSize(landmarks){
   return Math.hypot(maxX-minX, maxY-minY);
 }
 
+function triggerBurst(){
+  let dx=0, dy=0;
+  if(handHistory.length>=2){
+    const first = handHistory[0], last = handHistory[handHistory.length-1];
+    dx = last.x-first.x; dy = last.y-first.y;
+  }
+  let mag = Math.hypot(dx,dy);
+  let dirX, dirY;
+  if(mag < 0.015){
+    const a = Math.random()*Math.PI*2;
+    dirX = Math.cos(a); dirY = Math.sin(a);
+  } else {
+    dirX = dx/mag; dirY = dy/mag;
+  }
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+  const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+  const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+  burstDir.copy(right.clone().multiplyScalar(dirX).add(up.clone().multiplyScalar(-dirY))).normalize();
+  planets.forEach(p=>{ p.userData.burstMul = 0.6+Math.random()*1.0; });
+  burstActive = true;
+  burstStart = performance.now();
+}
+
 function onResults(results){
   octx.save();
   octx.clearRect(0,0,overlay.width, overlay.height);
@@ -409,10 +398,28 @@ function onResults(results){
 
     const gesture = classifyGesture(landmarks);
     const gestureLabel = {
-      fist:'✊ กำมือ', ily:'🤟 I Love You', peace:'✌️ หลุมดำดูด',
-      one:'☝️ หลุมดำคาย', open:'✋ แบมือ', none:'กำลังตรวจจับ...'
+      fist:'ກຳມື', ily:'ຮັກ (I Love You)', peace:'ດູດເຂົ້າຫຼຸມດຳ',
+      one:'ປ່ອຍອອກຈາກຫຼຸມດຳ', open:'ແບມື', none:'ກຳລັງກວດຈັບ...'
     };
-    statusEl.textContent = gestureLabel[gesture] || 'พบมือ';
+    statusEl.textContent = gestureLabel[gesture] || 'ພົບມື';
+
+    const cx = (landmarks[0].x + landmarks[9].x)/2;
+    const cy = (landmarks[0].y + landmarks[9].y)/2;
+    const now = performance.now();
+
+    if(lastFrameHandX !== null){
+      const dx = cx - lastFrameHandX;
+      sceneRotationOffset += dx * 4.0;
+    }
+    lastFrameHandX = cx;
+
+    handHistory.push({x:cx, y:cy, t:now});
+    while(handHistory.length && now - handHistory[0].t > 350) handHistory.shift();
+
+    if(prevGesture === 'fist' && gesture !== 'fist'){
+      triggerBurst();
+    }
+    prevGesture = gesture;
 
     const suckTarget = gesture === 'fist' ? 1 : 0;
     suckT += (suckTarget - suckT) * Math.min(0.06 + Math.abs(suckTarget-suckT)*0.06, 0.2);
@@ -425,10 +432,8 @@ function onResults(results){
     } else if(gesture === 'one'){
       captureT += (0 - captureT) * 0.06;
     }
-    // otherwise captureT holds its current value
 
     const size = handBoundingSize(landmarks);
-    const now = performance.now();
     if(handSizeSmoothed === null) handSizeSmoothed = size;
     handSizeSmoothed += (size - handSizeSmoothed)*0.35;
 
@@ -448,20 +453,20 @@ function onResults(results){
     lastHandTime = now;
 
   } else {
-    statusEl.textContent = 'ไม่พบมือ';
+    statusEl.textContent = 'ບໍ່ພົບມື';
     suckT += (0 - suckT)*0.08;
     loveT += (0 - loveT)*0.06;
     lastHandSize = null;
     handSizeSmoothed = null;
+    lastFrameHandX = null;
+    handHistory = [];
+    prevGesture = 'none';
   }
   octx.restore();
 }
 
 const hands = new Hands({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-hands.setOptions({
-  maxNumHands: 1, modelComplexity: 1,
-  minDetectionConfidence: 0.6, minTrackingConfidence: 0.6
-});
+hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6});
 hands.onResults(onResults);
 
 document.getElementById('startBtn').addEventListener('click', async ()=>{
@@ -478,7 +483,7 @@ document.getElementById('startBtn').addEventListener('click', async ()=>{
     });
     camUtil.start();
   }catch(err){
-    statusEl.textContent = 'ไม่สามารถเข้าถึงกล้องได้';
+    statusEl.textContent = 'ເປີດກ້ອງບໍ່ໄດ້';
     console.error(err);
   }
 });
