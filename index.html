@@ -62,9 +62,9 @@ function makeStars(count, spread, size){
   const mat = new THREE.PointsMaterial({color:0xffffff, size:size, transparent:true, opacity:0.85, depthWrite:false});
   return new THREE.Points(geo, mat);
 }
-const stars = makeStars(6000, 2200, 1.4);
+const stars = makeStars(6000, 2200, 1.1);
 scene.add(stars);
-const starsClose = makeStars(1500, 900, 2.2);
+const starsClose = makeStars(1500, 900, 1.7);
 scene.add(starsClose);
 
 scene.add(new THREE.AmbientLight(0x334466, 0.4));
@@ -153,19 +153,20 @@ blackHoleGroup.scale.setScalar(0.001);
 /* ============================= "I LOVE YOU" TEXT PARTICLES ============================= */
 function generateTextPoints(text){
   const cnv = document.createElement('canvas');
-  cnv.width = 900; cnv.height = 220;
+  cnv.width = 1600; cnv.height = 320;
   const ctx = cnv.getContext('2d');
   ctx.fillStyle = '#000'; ctx.fillRect(0,0,cnv.width,cnv.height);
   ctx.fillStyle = '#fff';
-  ctx.font = '900 130px "Arial Black", Arial, sans-serif';
+  ctx.font = '900 140px "Arial Black", Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  const textWidthPx = Math.max(ctx.measureText(text).width, 10);
   ctx.fillText(text, cnv.width/2, cnv.height/2);
   const data = ctx.getImageData(0,0,cnv.width,cnv.height).data;
   const pts = [];
   const step = 1;
-  const worldWidth = 190; // world units the full canvas width maps to
-  const scale = worldWidth / cnv.width; // uniform scale keeps letters undistorted
+  const desiredWorldWidth = 200; // total width the word should occupy in the scene
+  const scale = desiredWorldWidth / textWidthPx; // uniform -> letters stay undistorted
   for(let y=0;y<cnv.height;y+=step){
     for(let x=0;x<cnv.width;x+=step){
       const idx = (y*cnv.width+x)*4;
@@ -211,8 +212,6 @@ let flingAnim = 0, flingActive = false, swirlSpeed = 0;
 let handSizeSmoothed = null, lastHandSize = null, lastHandTime = performance.now();
 let zoomTargetDist = cameraDefaultDist;
 
-let sceneRotationOffset = 0;
-let lastFrameHandX = null;
 let handHistory = [];
 let prevGesture = 'none';
 let burstActive = false, burstStart = 0;
@@ -254,7 +253,7 @@ function animate(){
 
     const orbitPos = new THREE.Vector3(
       Math.cos(mesh.userData.angle)*def.orbit,
-      Math.sin(t*0.5+mesh.userData.angle)*1.2,
+      0,
       Math.sin(mesh.userData.angle)*def.orbit
     );
 
@@ -303,7 +302,7 @@ function animate(){
     swirlSpeed += (0-swirlSpeed)*Math.min(dt*3,1);
   }
 
-  const camAngle = t*0.02 + sceneRotationOffset;
+  const camAngle = t*0.02;
   const camY = 90*(cameraDist/cameraDefaultDist);
   camera.position.set(Math.sin(camAngle)*cameraDist, camY, Math.cos(camAngle)*cameraDist);
   camera.lookAt(0,0,0);
@@ -407,12 +406,6 @@ function onResults(results){
     const cy = (landmarks[0].y + landmarks[9].y)/2;
     const now = performance.now();
 
-    if(lastFrameHandX !== null){
-      const dx = cx - lastFrameHandX;
-      sceneRotationOffset += dx * 4.0;
-    }
-    lastFrameHandX = cx;
-
     handHistory.push({x:cx, y:cy, t:now});
     while(handHistory.length && now - handHistory[0].t > 350) handHistory.shift();
 
@@ -428,9 +421,9 @@ function onResults(results){
     loveT += (loveTarget - loveT) * Math.min(0.05 + Math.abs(loveTarget-loveT)*0.05, 0.15);
 
     if(gesture === 'peace'){
-      captureT += (1 - captureT) * 0.05;
-    } else if(gesture === 'one'){
-      captureT += (0 - captureT) * 0.06;
+      captureT += (1 - captureT) * 0.06;
+    } else {
+      captureT += (0 - captureT) * 0.05;
     }
 
     const size = handBoundingSize(landmarks);
@@ -456,9 +449,9 @@ function onResults(results){
     statusEl.textContent = 'ບໍ່ພົບມື';
     suckT += (0 - suckT)*0.08;
     loveT += (0 - loveT)*0.06;
+    captureT += (0 - captureT)*0.05;
     lastHandSize = null;
     handSizeSmoothed = null;
-    lastFrameHandX = null;
     handHistory = [];
     prevGesture = 'none';
   }
