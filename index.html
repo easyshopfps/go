@@ -13,7 +13,7 @@
   #overlay{position:fixed;bottom:16px;right:16px;width:180px;height:135px;transform:scaleX(-1);z-index:6;pointer-events:none;}
   #hud{position:fixed;top:16px;left:16px;z-index:6;background:rgba(10,15,30,.55);
     padding:14px 18px;border-radius:14px;border:1px solid rgba(120,170,255,.3);
-    backdrop-filter:blur(6px);max-width:300px;font-size:13px;line-height:1.6;}
+    backdrop-filter:blur(6px);max-width:310px;font-size:13px;line-height:1.6;}
   #hud h1{font-size:16px;margin:0 0 8px;background:linear-gradient(90deg,#8ecfff,#ffd27a);
     -webkit-background-clip:text;background-clip:text;color:transparent;}
   #hud .row{opacity:.85}
@@ -40,9 +40,10 @@
   <h1>☀️ ระบบสุริยะแบบโต้ตอบ</h1>
   <div class="row">✊ กำมือ → ดวงอาทิตย์กลืนกินดาวเคราะห์</div>
   <div class="row">✋ แบมือ → ดาวเคราะห์กลับสู่วงโคจร</div>
-  <div class="row">🤟 สัญลักษณ์ I Love You → ดาวรวมกันเป็นรูปหัวใจ</div>
-  <div class="row">👋 ดันมือเข้าจอ → ซูมเข้า</div>
-  <div class="row">👋💨 ดึงมือกลับเร็ว ๆ → ซูมออกสะบัด + ดาวหมุนวน</div>
+  <div class="row">🤟 สัญลักษณ์ I Love You → ดาวรวมกันสะกดคำว่า I LOVE YOU</div>
+  <div class="row">✌️ ชู 2 นิ้ว → หลุมดำปรากฏและดูดดาวเคราะห์เข้าไป</div>
+  <div class="row">☝️ ชู 1 นิ้ว → หลุมดำเปิดและคายดาวเคราะห์ออกมา</div>
+  <div class="row">👋 ดันมือเข้าจอ → ซูมเข้า / ดึงมือกลับเร็ว ๆ → ซูมออกสะบัด</div>
 </div>
 
 <div id="gesture">มือ: <span id="status">ไม่พบมือ</span></div>
@@ -115,7 +116,7 @@ function makeOrbitLine(radius){
   return new THREE.Line(geo, mat);
 }
 
-// Planet data: name, radius, orbitRadius, orbitSpeed, color, tilt, ring?
+// Planet data
 const planetDefs = [
   {name:'Mercury', r:1.6, orbit:26,  speed:1.60, color:0xa79a8c},
   {name:'Venus',   r:2.8, orbit:37,  speed:1.18, color:0xe0b98d},
@@ -134,10 +135,7 @@ planetDefs.forEach((def, idx)=>{
   const mat = new THREE.MeshStandardMaterial({color:def.color, roughness:0.8, metalness:0.1});
   const mesh = new THREE.Mesh(geo, mat);
   const angle = Math.random()*Math.PI*2;
-  mesh.userData = {
-    def, angle, baseScale:1,
-    heartIndex: idx
-  };
+  mesh.userData = {def, angle, heartIndex: idx};
   scene.add(mesh);
   if(def.ring){
     const ringGeo = new THREE.RingGeometry(def.r*1.4, def.r*2.3, 64);
@@ -158,19 +156,99 @@ planetDefs.forEach((def, idx)=>{
   planets.push(mesh);
 });
 
-// Heart-shape target positions (parametric heart curve), scaled & spread across planets
-function heartPoint(t, scale){
-  // classic heart parametric equation
-  const x = 16*Math.pow(Math.sin(t),3);
-  const y = 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
-  return new THREE.Vector3(x*scale, y*scale, 0);
+/* ============================= BLACK HOLE ============================= */
+const blackHolePos = new THREE.Vector3(120, 35, 55);
+const blackHoleGroup = new THREE.Group();
+blackHoleGroup.position.copy(blackHolePos);
+scene.add(blackHoleGroup);
+
+const bhCore = new THREE.Mesh(
+  new THREE.SphereGeometry(6, 32, 32),
+  new THREE.MeshBasicMaterial({color:0x000000})
+);
+blackHoleGroup.add(bhCore);
+
+const bhRings = [];
+for(let i=0;i<3;i++){
+  const ringGeo = new THREE.RingGeometry(7+i*3.2, 9+i*3.2, 64);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: i===0 ? 0xff8844 : (i===1 ? 0xaa55ff : 0x55ccff),
+    side:THREE.DoubleSide, transparent:true, opacity:0.0, blending:THREE.AdditiveBlending
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI/2 + i*0.25;
+  blackHoleGroup.add(ring);
+  bhRings.push(ring);
 }
+blackHoleGroup.scale.setScalar(0.001);
+
+/* ============================= "I LOVE YOU" TEXT PARTICLES ============================= */
+function generateTextPoints(text){
+  const cnv = document.createElement('canvas');
+  cnv.width = 640; cnv.height = 160;
+  const ctx = cnv.getContext('2d');
+  ctx.fillStyle = '#000'; ctx.fillRect(0,0,cnv.width,cnv.height);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 90px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cnv.width/2, cnv.height/2);
+  const data = ctx.getImageData(0,0,cnv.width,cnv.height).data;
+  const pts = [];
+  const step = 2;
+  for(let y=0;y<cnv.height;y+=step){
+    for(let x=0;x<cnv.width;x+=step){
+      const idx = (y*cnv.width+x)*4;
+      if(data[idx] > 128){
+        const nx = (x - cnv.width/2)/cnv.width*160;
+        const ny = -(y - cnv.height/2)/cnv.height*160*(cnv.height/cnv.width)*4;
+        pts.push(new THREE.Vector3(nx, ny, 0));
+      }
+    }
+  }
+  return pts;
+}
+const textShapePoints = generateTextPoints('I LOVE YOU');
+
+const LOVE_COUNT = 1100;
+const loveBase = new Float32Array(LOVE_COUNT*3);
+const loveTarget = new Float32Array(LOVE_COUNT*3);
+const loveColors = new Float32Array(LOVE_COUNT*3);
+const palette = [
+  [1.0,0.45,0.6],[0.6,0.5,1.0],[1.0,0.8,0.4],[0.5,0.85,1.0],[1.0,0.55,0.85]
+];
+for(let i=0;i<LOVE_COUNT;i++){
+  const r = 60+Math.random()*40;
+  const theta = Math.random()*Math.PI*2;
+  const phi = Math.acos(2*Math.random()-1);
+  loveBase[i*3] = r*Math.sin(phi)*Math.cos(theta);
+  loveBase[i*3+1] = 55 + r*Math.sin(phi)*Math.sin(theta)*0.5;
+  loveBase[i*3+2] = r*Math.cos(phi);
+
+  const tp = textShapePoints.length>0 ? textShapePoints[Math.floor(Math.random()*textShapePoints.length)] : new THREE.Vector3(0,0,0);
+  loveTarget[i*3] = tp.x + (Math.random()-0.5)*1.5;
+  loveTarget[i*3+1] = 55 + tp.y + (Math.random()-0.5)*1.5;
+  loveTarget[i*3+2] = tp.z + (Math.random()-0.5)*6;
+
+  const c = palette[Math.floor(Math.random()*palette.length)];
+  loveColors[i*3]=c[0]; loveColors[i*3+1]=c[1]; loveColors[i*3+2]=c[2];
+}
+const loveGeo = new THREE.BufferGeometry();
+const lovePosAttr = new THREE.BufferAttribute(new Float32Array(LOVE_COUNT*3), 3);
+loveGeo.setAttribute('position', lovePosAttr);
+loveGeo.setAttribute('color', new THREE.BufferAttribute(loveColors, 3));
+const loveMat = new THREE.PointsMaterial({
+  size:2.6, vertexColors:true, transparent:true, opacity:0.12,
+  blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true
+});
+const loveParticles = new THREE.Points(loveGeo, loveMat);
+scene.add(loveParticles);
 
 /* ============================= INTERACTION STATE ============================= */
-let suckT = 0;        // 0 = normal orbit, 1 = fully sucked into sun
-let heartT = 0;       // 0 = normal orbit, 1 = fully formed heart
-let sunScaleTarget = 1;
-let flingAnim = 0;    // 0..1 progress of fling burst animation
+let suckT = 0;      // fist -> sun devours
+let loveT = 0;      // ily -> text forms
+let captureT = 0;   // black hole capture amount
+let flingAnim = 0;
 let flingActive = false;
 let swirlSpeed = 0;
 
@@ -180,8 +258,6 @@ let lastHandTime = performance.now();
 let zoomTargetDist = cameraDefaultDist;
 
 const statusEl = document.getElementById('status');
-
-/* ============================= RENDER LOOP ============================= */
 const clock = new THREE.Clock();
 
 function animate(){
@@ -189,45 +265,41 @@ function animate(){
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  // ease state transitions
-  const suckSpeed = 2.2;
-  const heartSpeed = 2.6;
-
-  // sun scale & light follow suck amount
+  // sun
   const sunScale = 1 + suckT*2.6;
   sun.scale.setScalar(sunScale);
   sunGlow.scale.setScalar(sunScale*1.05 + Math.sin(t*3)*0.02);
   sunLight.intensity = 3.2 + suckT*4.5;
 
+  // black hole visuals
+  const bhVisTarget = captureT > 0.02 ? 1 : 0;
+  blackHoleGroup.userData.vis = blackHoleGroup.userData.vis || 0;
+  blackHoleGroup.userData.vis += (bhVisTarget - blackHoleGroup.userData.vis) * Math.min(dt*3,1);
+  const bhVis = blackHoleGroup.userData.vis;
+  blackHoleGroup.scale.setScalar(0.001 + bhVis*(1+captureT*0.6));
+  bhRings.forEach((ring,i)=>{
+    ring.material.opacity = bhVis*0.75;
+    ring.rotation.z += dt*(1.5+i*0.8)*(0.4+captureT*1.6);
+  });
+  blackHoleGroup.rotation.y += dt*0.3;
+
   planets.forEach((mesh)=>{
     const def = mesh.userData.def;
     mesh.userData.angle += def.speed*0.28*dt*(1-suckT*0.6) + swirlSpeed*dt;
 
-    // base orbit position
     const orbitPos = new THREE.Vector3(
       Math.cos(mesh.userData.angle)*def.orbit,
       Math.sin(t*0.5+mesh.userData.angle)*1.2,
       Math.sin(mesh.userData.angle)*def.orbit
     );
 
-    // sucked-into-sun position: lerp toward origin, shrink
-    const suckPos = orbitPos.clone().lerp(new THREE.Vector3(0,0,0), suckT);
-    const suckScale = 1 - suckT*0.85;
+    let pos = orbitPos.clone();
+    if(suckT>0.001) pos.lerp(new THREE.Vector3(0,0,0), suckT);
+    if(captureT>0.001) pos.lerp(blackHolePos, captureT);
+    mesh.position.copy(pos);
 
-    // heart formation position
-    const heartIdx = mesh.userData.heartIndex;
-    const heartAngle = (heartIdx/planets.length)*Math.PI*2 + t*0.15;
-    const hp = heartPoint(heartAngle, 3.0);
-    hp.z = Math.sin(t*0.6+heartIdx)*6;
-
-    // blend: orbit -> suck -> heart (heart takes priority if active)
-    const basePos = suckPos;
-    const finalPos = basePos.clone().lerp(hp, heartT);
-    mesh.position.copy(finalPos);
-
-    const finalScale = suckScale*(1-heartT) + heartT*1.0;
-    mesh.scale.setScalar(Math.max(finalScale,0.02));
-
+    const scale = Math.max(1 - suckT*0.85 - captureT*0.9, 0.02);
+    mesh.scale.setScalar(scale);
     mesh.rotation.y += dt*0.6;
 
     if(mesh.userData.moon){
@@ -237,16 +309,29 @@ function animate(){
     }
   });
 
-  // camera zoom handling + fling burst
+  // love text particles
+  const posArr = lovePosAttr.array;
+  const wobble = Math.sin(t*1.3)*0.6;
+  for(let i=0;i<LOVE_COUNT;i++){
+    const bx=loveBase[i*3], by=loveBase[i*3+1], bz=loveBase[i*3+2];
+    const tx=loveTarget[i*3], ty=loveTarget[i*3+1]+wobble, tz=loveTarget[i*3+2];
+    posArr[i*3]   = bx + (tx-bx)*loveT;
+    posArr[i*3+1] = by + (ty-by)*loveT;
+    posArr[i*3+2] = bz + (tz-bz)*loveT;
+  }
+  lovePosAttr.needsUpdate = true;
+  loveMat.opacity = 0.1 + loveT*0.9;
+  loveMat.size = 2.2 + loveT*1.0;
+  loveParticles.rotation.y += dt*0.02*(1-loveT);
+
+  // camera zoom + fling
   if(flingActive){
     flingAnim += dt*1.6;
-    const burst = Math.sin(Math.min(flingAnim,1)*Math.PI); // 0->1->0
+    const burst = Math.sin(Math.min(flingAnim,1)*Math.PI);
     cameraDist = cameraDefaultDist + burst*260;
     swirlSpeed = burst*3.5;
     if(flingAnim >= 1){
-      flingActive = false;
-      flingAnim = 0;
-      swirlSpeed = 0;
+      flingActive = false; flingAnim = 0; swirlSpeed = 0;
       zoomTargetDist = cameraDefaultDist;
     }
   } else {
@@ -276,36 +361,26 @@ const videoEl = document.getElementById('video');
 const overlay = document.getElementById('overlay');
 const octx = overlay.getContext('2d');
 
-function dist(a,b){
-  return Math.hypot(a.x-b.x, a.y-b.y, (a.z||0)-(b.z||0));
-}
+function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y, (a.z||0)-(b.z||0)); }
 
 function isExtended(landmarks, tipIdx, pipIdx, mcpIdx){
   const wrist = landmarks[0];
-  const tip = landmarks[tipIdx];
-  const pip = landmarks[pipIdx];
-  const mcp = landmarks[mcpIdx];
+  const tip = landmarks[tipIdx], pip = landmarks[pipIdx], mcp = landmarks[mcpIdx];
   return dist(tip,wrist) > dist(pip,wrist)*1.05 && dist(tip,wrist) > dist(mcp,wrist)*1.1;
 }
 
 function classifyGesture(landmarks){
-  const thumbExt = dist(landmarks[4], landmarks[17]) > dist(landmarks[2], landmarks[17])*0.9;
   const indexExt = isExtended(landmarks, 8, 6, 5);
   const middleExt = isExtended(landmarks, 12, 10, 9);
   const ringExt = isExtended(landmarks, 16, 14, 13);
   const pinkyExt = isExtended(landmarks, 20, 18, 17);
-
   const extCount = [indexExt,middleExt,ringExt,pinkyExt].filter(Boolean).length;
 
-  if(!indexExt && !middleExt && !ringExt && !pinkyExt){
-    return 'fist';
-  }
-  if(indexExt && pinkyExt && !middleExt && !ringExt){
-    return 'ily';
-  }
-  if(extCount >= 3){
-    return 'open';
-  }
+  if(!indexExt && !middleExt && !ringExt && !pinkyExt) return 'fist';
+  if(indexExt && pinkyExt && !middleExt && !ringExt) return 'ily';
+  if(indexExt && middleExt && !ringExt && !pinkyExt) return 'peace';
+  if(indexExt && !middleExt && !ringExt && !pinkyExt) return 'one';
+  if(extCount >= 3) return 'open';
   return 'none';
 }
 
@@ -318,9 +393,6 @@ function handBoundingSize(landmarks){
   return Math.hypot(maxX-minX, maxY-minY);
 }
 
-let gestureHoldStart = {fist:0, ily:0};
-let currentGesture = 'none';
-
 function onResults(results){
   octx.save();
   octx.clearRect(0,0,overlay.width, overlay.height);
@@ -328,7 +400,6 @@ function onResults(results){
   if(results.multiHandLandmarks && results.multiHandLandmarks.length > 0){
     const landmarks = results.multiHandLandmarks[0];
 
-    // draw simple skeleton dots
     octx.fillStyle = 'rgba(140,200,255,0.9)';
     landmarks.forEach(p=>{
       octx.beginPath();
@@ -337,20 +408,25 @@ function onResults(results){
     });
 
     const gesture = classifyGesture(landmarks);
-    currentGesture = gesture;
-
-    const gestureLabel = {fist:'✊ กำมือ', ily:'🤟 I Love You', open:'✋ แบมือ', none:'กำลังตรวจจับ...'};
+    const gestureLabel = {
+      fist:'✊ กำมือ', ily:'🤟 I Love You', peace:'✌️ หลุมดำดูด',
+      one:'☝️ หลุมดำคาย', open:'✋ แบมือ', none:'กำลังตรวจจับ...'
+    };
     statusEl.textContent = gestureLabel[gesture] || 'พบมือ';
 
-    // suck target
     const suckTarget = gesture === 'fist' ? 1 : 0;
     suckT += (suckTarget - suckT) * Math.min(0.06 + Math.abs(suckTarget-suckT)*0.06, 0.2);
 
-    // heart target
-    const heartTarget = gesture === 'ily' ? 1 : 0;
-    heartT += (heartTarget - heartT) * Math.min(0.06 + Math.abs(heartTarget-heartT)*0.06, 0.2);
+    const loveTarget = gesture === 'ily' ? 1 : 0;
+    loveT += (loveTarget - loveT) * Math.min(0.05 + Math.abs(loveTarget-loveT)*0.05, 0.15);
 
-    // zoom / fling based on hand size change
+    if(gesture === 'peace'){
+      captureT += (1 - captureT) * 0.05;
+    } else if(gesture === 'one'){
+      captureT += (0 - captureT) * 0.06;
+    }
+    // otherwise captureT holds its current value
+
     const size = handBoundingSize(landmarks);
     const now = performance.now();
     if(handSizeSmoothed === null) handSizeSmoothed = size;
@@ -359,17 +435,13 @@ function onResults(results){
     if(lastHandSize !== null){
       const deltaT = Math.max((now-lastHandTime)/1000, 0.001);
       const rate = (handSizeSmoothed - lastHandSize)/deltaT;
-
-      // rapid shrink => fling / snap back
       if(rate < -1.1 && !flingActive){
-        flingActive = true;
-        flingAnim = 0;
+        flingActive = true; flingAnim = 0;
       }
       if(!flingActive){
-        // map hand size (~0.15 far .. ~0.55 close) to zoom distance
         const clamped = Math.max(0.12, Math.min(0.6, handSizeSmoothed));
-        const norm = (clamped - 0.12)/(0.6-0.12); // 0..1
-        zoomTargetDist = cameraDefaultDist - norm*140; // closer hand => smaller distance => zoom in
+        const norm = (clamped - 0.12)/(0.6-0.12);
+        zoomTargetDist = cameraDefaultDist - norm*140;
       }
     }
     lastHandSize = handSizeSmoothed;
@@ -377,9 +449,8 @@ function onResults(results){
 
   } else {
     statusEl.textContent = 'ไม่พบมือ';
-    currentGesture = 'none';
     suckT += (0 - suckT)*0.08;
-    heartT += (0 - heartT)*0.08;
+    loveT += (0 - loveT)*0.06;
     lastHandSize = null;
     handSizeSmoothed = null;
   }
@@ -388,10 +459,8 @@ function onResults(results){
 
 const hands = new Hands({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
 hands.setOptions({
-  maxNumHands: 1,
-  modelComplexity: 1,
-  minDetectionConfidence: 0.6,
-  minTrackingConfidence: 0.6
+  maxNumHands: 1, modelComplexity: 1,
+  minDetectionConfidence: 0.6, minTrackingConfidence: 0.6
 });
 hands.onResults(onResults);
 
